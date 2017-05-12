@@ -1,6 +1,7 @@
 #!/usr/bin/evn python
 """
 Python script for programmatically sending bitcoin via email
+using blockonomics API
 """
 import re
 import os
