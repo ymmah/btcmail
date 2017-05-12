@@ -1,6 +1,6 @@
 #!/usr/bin/evn python
 """
-Pythong script for generating redeem links for given email address with given server end point.
+Python script for programmatically sending bitcoin via email
 """
 import re
 import os
@@ -15,7 +15,8 @@ API Settings
 BASE_SERVER = "https://www.blockonomics.co"
 SPLIT_KEY_API = BASE_SERVER + "/api/redeem_code"
 SEND_MAIL_API = BASE_SERVER + "/api/send_redeem_code"
-DEFAULT_REDEEM_ENDPOINT = BASE_SERVER + "/btcmail#/redeem"
+#Change this endpoint to point to your custom HTML
+REDEEM_ENDPOINT = BASE_SERVER + "/btcmail#/redeem"
 
 """
 A custom type for argparse, to facilitate validation of email addresses.
@@ -44,54 +45,49 @@ class EmailType(object):
         return value
 
 
-def generate_redeem_code(email, redeem_url):
+def generate_redeem_link(email):
 
-    """
-    Generate (Public, Private) key pair
-    """
-    rand = os.urandom(32).encode('hex')
-    secret_exponent= int("0x"+rand, 0)
-    private_key = encoding.secret_exponent_to_wif(secret_exponent, compressed=True)
-    public_pair = ecdsa.public_pair_for_secret_exponent(ecdsa.secp256k1.generator_secp256k1,secret_exponent)
-    public_key1 = "04" + format(public_pair[0], 'x') + format(public_pair[1], 'x')
+  #Generate (Public, Private) key pair
+  rand = os.urandom(32).encode('hex')
+  secret_exponent= int("0x"+rand, 0)
+  private_key = encoding.secret_exponent_to_wif(secret_exponent, compressed=True)
+  public_pair = ecdsa.public_pair_for_secret_exponent(ecdsa.secp256k1.generator_secp256k1,secret_exponent)
+  public_key1 = "04" + format(public_pair[0], 'x') + format(public_pair[1], 'x')
 
-    """
-    Generate split key
-    email : Redeem code(other half of the private key) will be sent to this email address
-    public_key1 : Pulbic key to be user to generate split key
-    """
-    post_request_data = { "public_key1" : public_key1, "email" : email } 
-    response = requests.post(SPLIT_KEY_API, data=post_request_data)
-    result = response.json()
+  #Only submit public_key/email to server
+  post_request_data = { "public_key1" : public_key1, "email" : email } 
+  response = requests.post(SPLIT_KEY_API, data=post_request_data)
+  result = response.json()
+  btc_address = result["bitcoin_address"]
 
-    """ 
-    Even if its gives us proper json response, we need to check for the status and error message
-    """
-    if "bitcoin_address" in result:
+  if btc_address:
+    email_redeem_code(btc_address)
+    redeem_url="{}?key1={}&bitcoin_address={}".format(REDEEM_ENDPOINT,
+                                                      private_key, btc_address)
+    return dict(redeem_url = redeem_url, 
+                bitcoin_address = btc_address)
+  else:
+    return dict(error=result['message'])
 
-        """
-        Send Redeem code from the server to registered email id
-        """
-        btc_address = result["bitcoin_address"]
-        payload = {"bitcoin_address" : btc_address}
-        response = requests.post(SEND_MAIL_API, data=payload)
-        post_result = response.json()
+
+def email_redeem_code(address):
+  payload = {"bitcoin_address" : address}
+  response = requests.post(SEND_MAIL_API, data=payload)
+  if (not response.ok):
+    raise Exception("Server ERROR: Could not email redeem code")
         
-        if "status" in post_result:
-            print "[Send Mail] Error : " + post_result["message"]
-        else:
-            if redeem_url.endswith("/"):
-                redeem_url = redeem_url[:-1]
-            print "Redeem Link : " + redeem_url + "?key1=" + private_key + "&bitcoin_address=" + btc_address
-            print "Bitcoin Address : " + btc_address
-    else:
-        print "[Split Key] Error : " + result["message"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--email", type=EmailType('RFC5322'), help="Receiver's Email Address.", required=True)
-    parser.add_argument("--server", help="Server endpoint to create other half of the private key.", default=DEFAULT_REDEEM_ENDPOINT )
+    parser.add_argument("-e", "--email", type=EmailType('RFC5322'),
+                        required=True, help="Generate redeem link for given emailid")
 
-    args = vars(parser.parse_args())
-    
-    generate_redeem_code(args['email'], args['server'] )
+    args = parser.parse_args()
+
+    if (args.email):
+      result = generate_redeem_link(args.email)
+      print(result)
+      print("You can now send BTC to {} and send {} the above redeem"
+            "link".format(result['bitcoin_address'], args.email))
+    else:  
+      parser.print_help()
