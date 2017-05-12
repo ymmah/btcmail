@@ -59,7 +59,7 @@ def generate_redeem_link(email):
   post_request_data = { "public_key1" : public_key1, "email" : email } 
   response = requests.post(SPLIT_KEY_API, data=post_request_data)
   result = response.json()
-  btc_address = result["bitcoin_address"]
+  btc_address = result.get("bitcoin_address")
 
   if btc_address:
     email_redeem_code(btc_address)
@@ -81,7 +81,7 @@ def email_redeem_code(address):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--email", type=EmailType('RFC5322'),
-                        required=True, help="Generate redeem link for given emailid")
+                        help="Generate redeem link for given emailid")
 
     args = parser.parse_args()
 

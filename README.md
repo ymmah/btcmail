@@ -6,7 +6,7 @@
 ```pip install pycoin requests```
 
 ## Running the script
-* python main.py --email *(receivers email address)* 
+* python main.py --email *(recepient email address)* 
 
 ## Sample Output
 ```
