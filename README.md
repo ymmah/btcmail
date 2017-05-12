@@ -1,9 +1,8 @@
 # Generating Redeem links with Blockonomics API
-## Requirements
-* python 2.7
-* Python modules
-  * requests
-  * pycoin
+## Install
+* Make sure you have python 2.7 installed
+* Install requests and pycoin python modules. Using pip you can do
+```pip install pycoin requests```
 
 ## Running the script
 * python redeem_bitcoin.py --email *(receivers email address)* --server *(server end point for redeem)*
