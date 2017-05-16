@@ -5,7 +5,7 @@
 * Install requests and pycoin python modules. Using pip you can do
 ```pip install pycoin requests```
 
-##Sample Input file
+## Sample Input file
 ```
 webmaster@blockonomics.co
 support@blockonomics.co
