@@ -5,13 +5,15 @@
 * Install requests and pycoin python modules. Using pip you can do
 ```pip install pycoin requests```
 
-## Running the script
-* python main.py --email *(recepient email address)* 
-
-## Sample Output
+##Sample Input file
 ```
-python main.py -e webmaster@blockonomics.co
-{'bitcoin_address': u'16bAaVkzX6BQVdfYxSfGfHMamTcWAX3ekj', 'redeem_url':
-'https://www.blockonomics.co/btcmail#/redeem?key1=Kyk8AYKuxhMRtXMtnJ51AbHoGrJRv4Lpc1fziux6kNLuYFqwryhU&bitcoin_address=16bAaVkzX6BQVdfYxSfGfHMamTcWAX3ekj'}
-You can now send BTC to 16bAaVkzX6BQVdfYxSfGfHMamTcWAX3ekj and send webmaster@blockonomics.co the above redeemlink
+webmaster@blockonomics.co
+support@blockonomics.co
+```
+
+## Sample Run
+```
+python main.py -i /tmp/inp.txt 
+"webmaster@blockonomics.co","1HdrmsYgPc4dKGr67PM8VhLUTFu1DKYUSp","https://www.blockonomics.co/btcmail#/redeem?key1=L26fEzVqZGDr7JcB8Aum1PAnoTaUS6pWvmA7ungch21inzSVPPZM&bitcoin_address=1HdrmsYgPc4dKGr67PM8VhLUTFu1DKYUSp"
+"support@blockonomics.co","18fCzYVZ8cZqrJvdQSC5qRN7bSrDQQw8r8","https://www.blockonomics.co/btcmail#/redeem?key1=L53sqrBH5dNEbJVUiH2CLr6AviuTSmUQeuBb9VNmgEkfJQxH4Rbz&bitcoin_address=18fCzYVZ8cZqrJvdQSC5qRN7bSrDQQw8r8"
 ```

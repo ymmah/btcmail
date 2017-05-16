@@ -5,6 +5,8 @@ using blockonomics API
 """
 import re
 import os
+import sys
+import csv
 import argparse
 import requests
 
@@ -23,27 +25,27 @@ REDEEM_ENDPOINT = BASE_SERVER + "/btcmail#/redeem"
 A custom type for argparse, to facilitate validation of email addresses.
 """
 class EmailType(object):
-    """
-    Supports checking email agains different patterns. The current available patterns is:
-    RFC5322 (http://www.ietf.org/rfc/rfc5322.txt)
-    """
+  """
+  Supports checking email agains different patterns. The current available patterns is:
+  RFC5322 (http://www.ietf.org/rfc/rfc5322.txt)
+  """
 
-    patterns = {
-        'RFC5322': re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"),
-    }
+  patterns = {
+    'RFC5322': re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"),
+  }
 
-    def __init__(self, pattern):
-        if pattern not in self.patterns:
-            raise KeyError('{} is not a supported email pattern, choose from:'
-                           ' {}'.format(pattern, ','.join(self.patterns)))
-        self._rules = pattern
-        self._pattern = self.patterns[pattern]
+  def __init__(self, pattern):
+    if pattern not in self.patterns:
+      raise KeyError('{} is not a supported email pattern, choose from:'
+                     ' {}'.format(pattern, ','.join(self.patterns)))
+    self._rules = pattern
+    self._pattern = self.patterns[pattern]
 
-    def __call__(self, value):
-        if not self._pattern.match(value):
-            raise argparse.ArgumentTypeError(
-                "'{}' is not a valid email - does not match {} rules".format(value, self._rules))
-        return value
+  def __call__(self, value):
+    if not self._pattern.match(value):
+      raise argparse.ArgumentTypeError(
+        "'{}' is not a valid email - does not match {} rules".format(value, self._rules))
+    return value
 
 
 def generate_redeem_link(email):
@@ -68,7 +70,7 @@ def generate_redeem_link(email):
     return dict(redeem_url = redeem_url, 
                 bitcoin_address = btc_address)
   else:
-    return dict(error=result['message'])
+    raise RuntimeError(result['message'])
 
 
 def email_redeem_code(address):
@@ -76,19 +78,31 @@ def email_redeem_code(address):
   response = requests.post(SEND_MAIL_API, data=payload)
   if (not response.ok):
     raise Exception("Server ERROR: Could not email redeem code")
-        
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--email", type=EmailType('RFC5322'),
-                        help="Generate redeem link for given emailid")
+  parser = argparse.ArgumentParser()
+  parser.add_argument("-i", "--infile", type=argparse.FileType("r"), 
+                      help="Input CSV file containing email addresses")
+  parser.add_argument("-o", "--outfile", type=argparse.FileType("w"), 
+                      default=sys.stdout, help="Outfile CSV file (default stdout)")
 
-    args = parser.parse_args()
+  args = parser.parse_args()
+  email_type = EmailType('RFC5322')
 
-    if (args.email):
-      result = generate_redeem_link(args.email)
-      print(result)
-      print("You can now send BTC to {} and send {} the above redeem"
-            "link".format(result['bitcoin_address'], args.email))
-    else:  
-      parser.print_help()
+  if (args.infile):
+    reader = csv.reader(args.infile)
+    writer = csv.writer(args.outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
+    for row in reader:
+      try:
+        if not len(row):
+          continue
+        email_type(row[0])
+        result = generate_redeem_link(row[0])
+        result['emailid']=row[0]
+        writer.writerow(result.values())
+      except (argparse.ArgumentTypeError, RuntimeError) as e:
+        print "Error", e
+        continue
+  else:  
+    parser.print_help()
