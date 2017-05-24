@@ -52,10 +52,10 @@ def generate_redeem_link(email):
 
   #Generate (Public, Private) key pair
   rand = os.urandom(32).encode('hex')
-  secret_exponent= int("0x"+rand, 0)
+  secret_exponent= int("0x"+rand, 0) % ecdsa.secp256k1._r
   private_key = encoding.secret_exponent_to_wif(secret_exponent, compressed=True)
   public_pair = ecdsa.public_pair_for_secret_exponent(ecdsa.secp256k1.generator_secp256k1,secret_exponent)
-  public_key1 = "04" + format(public_pair[0], 'x') + format(public_pair[1], 'x')
+  public_key1 = "04" + format(public_pair[0], '064x') + format(public_pair[1], '064x')
 
   #Only submit public_key/email to server
   post_request_data = { "public_key1" : public_key1, "email" : email } 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
   if (args.infile):
     reader = csv.reader(args.infile)
-    writer = csv.writer(args.outfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
+    writer = csv.writer(args.outfile, delimiter=',')
     for row in reader:
       try:
         if not len(row):
