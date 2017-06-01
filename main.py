@@ -9,7 +9,7 @@ import sys
 import csv
 import argparse
 import requests
-
+import time
 from pycoin import ecdsa, encoding
 
 """
@@ -20,6 +20,8 @@ SPLIT_KEY_API = BASE_SERVER + "/api/redeem_code"
 SEND_MAIL_API = BASE_SERVER + "/api/send_redeem_code"
 #Change this endpoint to point to your custom HTML
 REDEEM_ENDPOINT = BASE_SERVER + "/btcmail#/redeem"
+#Set API_KEY to relax API limits if needed
+API_KEY = ""
 
 """
 A custom type for argparse, to facilitate validation of email addresses.
@@ -59,7 +61,8 @@ def generate_redeem_link(email):
 
   #Only submit public_key/email to server
   post_request_data = { "public_key1" : public_key1, "email" : email } 
-  response = requests.post(SPLIT_KEY_API, data=post_request_data)
+  headers={'Authorization': 'Bearer {}'.format(API_KEY)}
+  response = requests.post(SPLIT_KEY_API, data=post_request_data, headers=headers)
   result = response.json()
   btc_address = result.get("bitcoin_address")
 
@@ -75,7 +78,8 @@ def generate_redeem_link(email):
 
 def email_redeem_code(address):
   payload = {"bitcoin_address" : address}
-  response = requests.post(SEND_MAIL_API, data=payload)
+  headers={'Authorization': 'Bearer {}'.format(API_KEY)}
+  response = requests.post(SEND_MAIL_API, data=payload, headers=headers)
   if (not response.ok):
     raise Exception("Server ERROR: Could not email redeem code")
 
@@ -99,6 +103,8 @@ if __name__ == "__main__":
           continue
         email_type(row[0])
         result = generate_redeem_link(row[0])
+        #Don't do very fast, wait a second before next request
+        time.sleep(1)
         result['emailid']=row[0]
         writer.writerow(result.values())
       except (argparse.ArgumentTypeError, RuntimeError) as e:
